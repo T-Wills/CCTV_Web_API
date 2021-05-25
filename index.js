@@ -5,17 +5,21 @@ const app = express();
 const cors = require("cors");
 const mysql = require("mysql");
 const jwt = require("jsonwebtoken");
-const _ = require("lodash");
 const bcrypt = require("bcryptjs");
 const saltRounds = 10;
 const { validationResult } = require("express-validator");
 const { validateConfirmPassword } = require("./password-validation");
+const {BlobServiceClient} = require("@azure/storage-blob");
 
 //email account activation
 const mailgun = require("mailgun-js");
 const DOMAIN = "sandboxd31307388f914d4db3d7dac58d4795db.mailgun.org";
 const mg = mailgun({ apiKey: process.env.MAILGUN_APIKEY, domain: DOMAIN });
 
+const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
+const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
+
+//server port
 const port = process.env.PORT || 3030;
 
 const db = mysql.createPool({
@@ -308,6 +312,49 @@ app.put("/resetpassword", (req, res) => {
         res.status(400).json({error: "authentication error" });
     }
 });
+
+/*................Get blob Videos ..............*/
+app.get("/getblobvideos", (req, res)=>{
+  const blobServiceClient = new BlobServiceClient(
+    `https://teeblob.blob.core.windows.net/videos`,
+    AZURE_STORAGE_CONNECTION_STRING
+  );
+
+  const containerName = "videos";
+  const blobName = "teeblob";
+
+  async function main(){
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const blobClient = containerClient.getBlobClient(blobName);
+  
+    // Get blob content from position 0 to the end
+    // In Node.js, get downloaded data by accessing downloadBlockBlobResponse.readableStreamBody
+    const downloadBlockBlobResponse = await blobClient.download();
+    const downloaded = (
+      await streamToBuffer(downloadBlockBlobResponse.readableStreamBody)
+    ).toString();
+    res.status(200).json({
+      message:`download successful, ${downloaded}`
+    })
+    console.log("Downloaded blob content:", downloaded);
+
+    // [Node.js only] A helper method used to read a Node.js readable stream into a Buffer
+   /*  async function streamToBuffer(readableStream) {
+      return new Promise((resolve, reject) => {
+        const chunks = [];
+        readableStream.on("data", (data) => {
+          chunks.push(data instanceof Buffer ? data : Buffer.from(data));
+        });
+        readableStream.on("end", () => {
+          resolve(Buffer.concat(chunks));
+        });
+        readableStream.on("error", reject);
+      });
+    } */
+  }
+
+  main();
+})
 
 
 
