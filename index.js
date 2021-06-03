@@ -20,7 +20,7 @@ const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STR
 const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
 
 //server port
-const port = process.env.PORT || 3030;
+const port = process.env.PORT || 4000;
 
 const db = mysql.createPool({
   host: "localhost",
@@ -314,21 +314,30 @@ app.put("/resetpassword", (req, res) => {
 });
 
 /*................Get blob Videos ..............*/
-app.get("/getblobvideos", (req, res)=>{
+app.get(`/getblobvideos`, (req, res)=>{
+  console.log(res);
   const blobServiceClient = new BlobServiceClient(
-    `https://teeblob.blob.core.windows.net/videos`,
+    `https://teesblob.blob.core.windows.net/videos`,
     AZURE_STORAGE_CONNECTION_STRING
   );
 
   const containerName = "videos";
-  const blobName = "teeblob";
+ /*  const blobName = "teesblob"; */
 
-  async function main(){
+  async function main() {
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+  
+    let i = 1;
+    let blobs = containerClient.listBlobsFlat();
+    for await (const blob of blobs) {
+      console.log(`Blob ${i++}: ${blob.name}`);
+    }
+  }
+/*   async function main(){
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blobClient = containerClient.getBlobClient(blobName);
   
     // Get blob content from position 0 to the end
-    // In Node.js, get downloaded data by accessing downloadBlockBlobResponse.readableStreamBody
     const downloadBlockBlobResponse = await blobClient.download();
     const downloaded = (
       await streamToBuffer(downloadBlockBlobResponse.readableStreamBody)
@@ -336,22 +345,9 @@ app.get("/getblobvideos", (req, res)=>{
     res.status(200).json({
       message:`download successful, ${downloaded}`
     })
+    console.log(blobClient);
     console.log("Downloaded blob content:", downloaded);
-
-    // [Node.js only] A helper method used to read a Node.js readable stream into a Buffer
-   /*  async function streamToBuffer(readableStream) {
-      return new Promise((resolve, reject) => {
-        const chunks = [];
-        readableStream.on("data", (data) => {
-          chunks.push(data instanceof Buffer ? data : Buffer.from(data));
-        });
-        readableStream.on("end", () => {
-          resolve(Buffer.concat(chunks));
-        });
-        readableStream.on("error", reject);
-      });
-    } */
-  }
+  } */
 
   main();
 })
@@ -362,5 +358,5 @@ app.get("/getblobvideos", (req, res)=>{
 
 /* ..............Server Setup.............. */
 app.listen(port, () => {
-  console.log("running on port 3030");
+  console.log(`running on port ${port}`);
 });
