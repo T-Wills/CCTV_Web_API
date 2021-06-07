@@ -316,21 +316,27 @@ app.put("/resetpassword", (req, res) => {
 /*................Get blob Videos ..............*/
 app.get(`/getblobvideos`, (req, res)=>{
   console.log(res);
-  const blobServiceClient = new BlobServiceClient(
+ /*  const blobServiceClient = new BlobServiceClient(
     `https://teesblob.blob.core.windows.net/videos`,
     AZURE_STORAGE_CONNECTION_STRING
   );
-
-  const containerName = "videos";
+ */
+  const containerName = "blobvideos";
  /*  const blobName = "teesblob"; */
 
   async function main() {
     const containerClient = blobServiceClient.getContainerClient(containerName);
   
-    let i = 1;
-    let blobs = containerClient.listBlobsFlat();
-    for await (const blob of blobs) {
+    
+      let i = 1;
+      let blobs = containerClient.listBlobsFlat();
+      
+    try{
+      for await (const blob of blobs) {
       console.log(`Blob ${i++}: ${blob.name}`);
+      }
+    } catch(e){
+      console.log(e);
     }
   }
 /*   async function main(){
